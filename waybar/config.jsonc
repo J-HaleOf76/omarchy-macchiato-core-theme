@@ -43,7 +43,9 @@
     "hyprland/workspaces": {
         "on-click": "activate",
         "format": "{name}",
-        "persistent-workspaces": { "1": [], "2": [], "3": [], "4": [] }
+        "window-role": "libreoffice",
+        "show-special": false,
+        "all-outputs": false
     },
 
     "custom/window-info": {
@@ -189,26 +191,19 @@
     },
 
     "battery": {
-    "states": {
-        "warning": 30,
-        "critical": 15
+        "format": "{icon} {capacity}%",
+        "format-charging": "󱐋 {icon} {capacity}%",
+        "format-plugged": " {capacity}%",
+        "format-full": "󰂅",
+        "format-icons": ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
+        "interval": 5,
+        "states": {
+            "warning": 30,
+            "critical": 15
+        },
+        "on-click": "omarchy-menu power",
+        "on-click-right": "notify-send -u low \"$(omarchy-battery-status)\"",
+        "tooltip-format-discharging": "{power:>1.0f}W↓ {capacity}%",
+        "tooltip-format-charging": "{power:>1.0f}W↑ {capacity}%"
     },
-    "format": "{icon} {capacity}%",
-    "format-charging": "󱐋 {icon} {capacity}%",
-    "format-plugged": " {capacity}%",
-    "format-icons": ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
-    "interval": 5,
-    "on-click": "omarchy-menu power"
-    },
-    "format-full": "󰂅",
-    "tooltip-format-discharging": "{power:>1.0f}W↓ {capacity}%",
-    "tooltip-format-charging": "{power:>1.0f}W↑ {capacity}%",
-    "interval": 5,
-    "on-click": "omarchy-menu power",
-    "on-click-right": "notify-send -u low \"$(omarchy-battery-status)\"",
-    "states": {
-      "warning": 20,
-      "critical": 10
-    }
-  },
 }
