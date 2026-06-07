@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# YouTube Downloader – Omarchy GUI + Manual Cookie Selector
-# - Auto-exit on click outside (MousePrimary)
-# - Dependency Installer included
+# YouTube Downloader – Omarchy Walker Edition
 # =============================================================================
 
 # Configuration
@@ -12,31 +10,37 @@ CURRENT_COOKIES="$DEFAULT_COOKIE_FILE"
 
 mkdir -p "$DOWNLOAD_DIR"
 
-# Theme Colors
-BG="#1e2030"
-BORDER="#6f7690"
-TEXT="#cad3f5"
-SEL_BG="#39515A"
-SEL_TEXT="#85abbc"
+# Walker prompt helper
+menu() {
+    local prompt="$1"
+    local options="$2"
+    echo -e "$options" | omarchy-launch-walker --dmenu -p "$prompt" --width 500 --maxheight 500
+}
 
-# Rofi Theme
-ROFI_THEME="
-* { background-color: transparent; text-color: $TEXT; font: 'JetBrainsMono Nerd Font 11'; }
-window { background-color: $BG; border: 2px; border-color: $BORDER; border-radius: 14px; width: 500px; padding: 20px; location: center; anchor: center; }
-entry { text-color: #a6da95; }
-listview { lines: 7; fixed-height: true; scrollbar: false; spacing: 8px; margin: 10px 0 0 0; }
-element { padding: 10px; border-radius: 10px; }
-element selected { background-color: $SEL_BG; text-color: $SEL_TEXT; }
-inputbar { children: [ prompt, entry ]; padding: 10px; background-color: #6f76901A; border-radius: 10px; }
-prompt { text-color: $SEL_TEXT; margin: 0 10px 0 0; }
-"
+# --- 1. Automatic Terminal Detection ---
+detect_terminal() {
+    if command -v alacritty &>/dev/null; then
+        echo "alacritty --class OmarchyFloatingTerm --title"
+    elif command -v ghostty &>/dev/null; then
+        echo "ghostty --title"
+    elif command -v kitty &>/dev/null; then
+        echo "kitty --title"
+    elif command -v foot &>/dev/null; then
+        echo "foot -T"
+    else
+        notify-send "Error" "No terminal found!"
+        exit 1
+    fi
+}
 
-# Helper: Install all necessary dependencies in Alacritty
+# Helper: Install dependencies
 install_deps() {
-    alacritty --class OmarchyFloatingTerm --title "Omarchy Dependency Installer" -e bash -c "
+    local term_cmd=$(detect_terminal)
+    walker --close 2>/dev/null
+    $term_cmd "Omarchy Dependency Installer" -e bash -c "
         echo -e '\e[38;2;198;160;246m\e[1m✦ Installing Dependencies...\e[0m'
         echo -e '\e[38;2;110;115;141m╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌\e[0m\n'
-        sudo pacman -S --needed --noconfirm yt-dlp ffmpeg rofi alacritty zenity libnotify
+        sudo pacman -S --needed --noconfirm yt-dlp ffmpeg walker zenity libnotify
         echo -e '\n\e[32m✔ Process complete.\e[0m'
         echo -e '\nPress any key to close...'
         read -n 1
@@ -46,9 +50,7 @@ install_deps() {
 # Function to handle cookie selection via GUI
 manage_cookies() {
     local options="🍪 Use Default\n📂 Select Manually\n🧩 Install Cookie Extension\n↩ Back"
-    local choice=$(echo -e "$options" | rofi -dmenu -i -p "Cookies" \
-        -kb-cancel "Escape,MouseSecondary,MousePrimary" \
-        -theme-str "$ROFI_THEME")
+    local choice=$(menu "Cookies" "$options")
 
     case "$choice" in
         *"Use Default"*)
@@ -73,20 +75,33 @@ manage_cookies() {
 }
 
 run_download() {
-    local url="$1"
-    local format="$2"
-    local merge_opts="$3"
+    local format="$1"
+    local merge_opts="$2"
+    local playlist="$3"
+    local term_cmd=$(detect_terminal)
     local cookie_cmd=""
+    local playlist_opts=""
 
     [[ -f "$CURRENT_COOKIES" ]] && cookie_cmd="--cookies $CURRENT_COOKIES"
+    [[ "$playlist" == "yes" ]] && playlist_opts="--yes-playlist"
 
-    alacritty --class OmarchyFloatingTerm --title "Omarchy Downloader" -e bash -c "
+    walker --close 2>/dev/null
+
+    $term_cmd "Omarchy Downloader" -e bash -c "
         echo -e '\e[38;2;198;160;246m\e[1m✦ Omarchy YouTube Downloader\e[0m'
-        echo -e '\e[38;2;110;115;141mUsing Cookies: $CURRENT_COOKIES\e[0m\n'
-        
-        yt-dlp $cookie_cmd $merge_opts -f '$format' -o '$DOWNLOAD_DIR/%(title)s.%(ext)s' '$url'
-        
-        if [ \$? -eq 0 ]; then
+        echo -e '\e[38;2;110;115;141m╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌\e[0m\n'
+
+        read -e -p \$'\\e[36mPaste URL: \\e[0m' url
+        [[ -z \"\$url\" ]] && echo -e '\n\e[31mNo URL entered.\e[0m' && read -n 1 && exit
+
+        echo -e '\n\e[38;2;110;115;141mDownloading...\e[0m\n'
+
+        cd '$DOWNLOAD_DIR'
+
+        yt-dlp $cookie_cmd $merge_opts $playlist_opts -f '$format' -o '%(title)s.%(ext)s' \"\$url\"
+        exit_code=\$?
+
+        if [ \$exit_code -eq 0 ]; then
             echo -e '\n\e[32m✔ Download Complete!\e[0m'
         else
             echo -e '\n\e[31m✘ Download Failed. Check URL or cookies.\e[0m'
@@ -98,12 +113,10 @@ run_download() {
 
 # --- Main Menu Loop ---
 while true; do
-    options="🎬 Video + Audio\n🎵 Audio Only\n🎞️ Video Only\n⚙️ Cookie Settings\n🛠️ Install Dependencies\n🚪 Exit"
-    chosen=$(echo -e "$options" | rofi -dmenu -i -p "󰗃 YT-DL" \
-        -kb-cancel "Escape,MouseSecondary,MousePrimary" \
-        -theme-str "$ROFI_THEME")
+    options="🎬 Video + Audio\n🎵 Audio Only\n🎞️ Video Only\n📋 Playlist (Video + Audio)\n📋 Playlist (Audio Only)\n⚙️ Cookie Settings\n🛠️ Install Dependencies\n🚪 Exit"
+    chosen=$(menu "󰗃 YT-DL" "$options")
 
-    [[ -z "$chosen" || "$chosen" == "🚪 Exit" ]] && exit 0
+    [[ -z "$chosen" || "$chosen" == *"Exit"* ]] && exit 0
 
     case "$chosen" in
         *"Install Dependencies"*)
@@ -116,14 +129,11 @@ while true; do
             ;;
     esac
 
-    url=$(rofi -dmenu -p "Paste URL" \
-        -kb-cancel "Escape,MouseSecondary,MousePrimary" \
-        -theme-str "$ROFI_THEME")
-    [[ -z "$url" ]] && continue
-
     case "$chosen" in
-        *"Video + Audio"*) run_download "$url" "bestvideo+bestaudio/best" "--merge-output-format mp4" ;;
-        *"Audio Only"*)    run_download "$url" "bestaudio" "--extract-audio --audio-format m4a" ;;
-        *"Video Only"*)    run_download "$url" "bestvideo" "" ;;
+        *"Playlist (Video + Audio)"*) run_download "bestvideo+bestaudio/best" "--merge-output-format mp4" "yes" ;;
+        *"Playlist (Audio Only)"*)    run_download "bestaudio" "--extract-audio --audio-format m4a" "yes" ;;
+        *"Video + Audio"*) run_download "bestvideo+bestaudio/best" "--merge-output-format mp4" "no" ;;
+        *"Audio Only"*)    run_download "bestaudio" "--extract-audio --audio-format m4a" "no" ;;
+        *"Video Only"*)    run_download "bestvideo" "" "no" ;;
     esac
 done

@@ -1,44 +1,44 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Malware Scanner – Omarchy GUI Edition
-# - Auto-exit on click outside (MousePrimary)
-# - GUI folder selection via Zenity
-# - Terminal-based Updates, Logs & Installs via Alacritty
+# Malware Scanner – Omarchy Walker Edition
 # =============================================================================
 
 # Dependency Check
-for cmd in rofi alacritty zenity clamscan freshclam; do
+for cmd in walker alacritty zenity clamscan freshclam; do
     if ! command -v "$cmd" &>/dev/null; then
         notify-send "Scanner Error" "Missing dependency: $cmd"
-        # We don't exit here so the user can still use the "Install" option
     fi
 done
 
-# Theme Configuration
-BG="#1e2030"
-BORDER="#6f7690"
-TEXT="#cad3f5"
-SEL_BG="#39515A"
-SEL_TEXT="#85abbc"
-MAUVE="#c6a0f6"
+# Walker prompt helper
+menu() {
+    local prompt="$1"
+    local options="$2"
+    echo -e "$options" | omarchy-launch-walker --dmenu -p "$prompt" --width 500 --maxheight 400
+}
 
-# Rofi Theme matching your Macchiato style
-ROFI_THEME="
-* { background-color: transparent; text-color: $TEXT; font: 'JetBrainsMono Nerd Font 11'; }
-window { background-color: $BG; border: 2px; border-color: $BORDER; border-radius: 14px; width: 500px; padding: 20px; location: center; anchor: center; }
-listview { lines: 5; fixed-height: true; scrollbar: false; spacing: 8px; margin: 10px 0 0 0; }
-element { padding: 10px; border-radius: 10px; }
-element selected { background-color: $SEL_BG; text-color: $SEL_TEXT; }
-inputbar { children: [ prompt, entry ]; padding: 10px; background-color: #6f76901A; border-radius: 10px; }
-prompt { text-color: $SEL_TEXT; margin: 0 10px 0 0; }
-entry { text-color: $TEXT; }
-"
+# Helper: Run commands in detected terminal
+detect_terminal() {
+    if command -v alacritty &>/dev/null; then
+        echo "alacritty --class OmarchyFloatingTerm --title"
+    elif command -v ghostty &>/dev/null; then
+        echo "ghostty --title"
+    elif command -v kitty &>/dev/null; then
+        echo "kitty --title"
+    elif command -v foot &>/dev/null; then
+        echo "foot -T"
+    else
+        notify-send "Error" "No terminal found!"
+        exit 1
+    fi
+}
 
-# Helper: Run commands in Alacritty (Floating Class added for your Hyprland rules)
 run_in_term() {
+    local term_cmd=$(detect_terminal)
     local title="$1"
     local cmd="$2"
-    alacritty --class OmarchyFloatingTerm --title "$title" -e bash -c "
+    walker --close 2>/dev/null
+    $term_cmd "$title" -e bash -c "
         echo -e '\e[38;2;198;160;246m\e[1m✦ $title\e[0m'
         echo -e '\e[38;2;110;115;141m╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌\e[0m\n'
         $cmd
@@ -50,10 +50,7 @@ run_in_term() {
 # --- Main Logic ---
 options="📂 Scan a Directory\n🔄 Update Virus Definitions\n📄 View Last Scan Log\n📦 Install Dependencies\n🚪 Exit"
 
-# Rofi Menu with Auto-Exit logic (MousePrimary = Click outside to exit)
-chosen=$(echo -e "$options" | rofi -dmenu -i -p "󰒔 Scanner" \
-    -kb-cancel "Escape,MouseSecondary,MousePrimary" \
-    -theme-str "$ROFI_THEME")
+chosen=$(menu "󰒔 Scanner" "$options")
 
 [[ -z "$chosen" || "$chosen" == *"Exit"* ]] && exit 0
 
@@ -85,6 +82,6 @@ case "$chosen" in
         ;;
 
     *"Install Dependencies"*)
-        run_in_term "Install Dependencies" "sudo pacman -S --needed --noconfirm clamav rofi alacritty zenity"
+        run_in_term "Install Dependencies" "sudo pacman -S --needed --noconfirm clamav walker alacritty zenity"
         ;;
 esac

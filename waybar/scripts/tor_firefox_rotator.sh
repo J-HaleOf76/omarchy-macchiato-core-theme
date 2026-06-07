@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Tor + Firefox Rotator – Omarchy Nested GUI (Routing Stop Fix)
+# Tor + Firefox Rotator – Omarchy Walker Edition
 # =============================================================================
 
 # Configuration Paths
@@ -10,32 +10,35 @@ SERVICE_FILE="$HOME/.config/systemd/user/${SERVICE_NAME}.service"
 CORE_SCRIPT="$HOME/.local/bin/change_tor_ip.sh"
 FIREFOX_PROFILE="tor-proxy"
 
-# Theme Colors (Omarchy Macchiato)[cite: 1, 3]
-BG="#1e2030"
-BORDER="#6f7690"
-TEXT="#cad3f5"
-SEL_BG="#39515A"
-SEL_TEXT="#85abbc"
-GREEN="#a6da95"
-RED="#ed8796"
-MAUVE="#c6a0f6"
+# Walker prompt helper
+menu() {
+    local prompt="$1"
+    local options="$2"
+    echo -e "$options" | omarchy-launch-walker --dmenu -p "$prompt" --width 550 --maxheight 400
+}
 
-# Rofi Theme - Limited lines to prevent stretching[cite: 1]
-ROFI_THEME="
-* { background-color: transparent; text-color: $TEXT; font: 'JetBrainsMono Nerd Font 11'; }
-window { background-color: $BG; border: 2px; border-color: $BORDER; border-radius: 14px; width: 550px; padding: 20px; location: center; anchor: center; }
-listview { lines: 6; fixed-height: true; scrollbar: false; spacing: 8px; margin: 10px 0 0 0; }
-element { padding: 10px; border-radius: 10px; }
-element selected { background-color: $SEL_BG; text-color: $SEL_TEXT; }
-inputbar { children: [ prompt, entry ]; padding: 10px; background-color: #6f76901A; border-radius: 10px; }
-prompt { margin: 0 10px 0 0; font-weight: bold; }
-"
+# Helper: Run commands in detected terminal
+detect_terminal() {
+    if command -v alacritty &>/dev/null; then
+        echo "alacritty --class OmarchyFloatingTerm --title"
+    elif command -v ghostty &>/dev/null; then
+        echo "ghostty --title"
+    elif command -v kitty &>/dev/null; then
+        echo "kitty --title"
+    elif command -v foot &>/dev/null; then
+        echo "foot -T"
+    else
+        notify-send "Error" "No terminal found!"
+        exit 1
+    fi
+}
 
-# Helper: Run commands in Alacritty with Done Notification[cite: 1]
 run_in_term() {
+    local term_cmd=$(detect_terminal)
     local title="$1"
     local cmd="$2"
-    alacritty --title "$title" -e bash -c "
+    walker --close 2>/dev/null
+    $term_cmd "$title" -e bash -c "
         echo -e '\e[38;2;198;160;246m\e[1m✦ $title\e[0m'
         echo -e '\e[38;2;110;115;141m╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌\e[0m\n'
         $cmd
@@ -52,21 +55,20 @@ is_rotator_active() { systemctl --user is-active --quiet "$SERVICE_NAME"; }
 
 # --- Main Logic ---
 while true; do
-    # Dynamic Status Icons and Colors[cite: 3]
-    if is_tor_active; then TOR_STAT="ON"; TOR_COL="$GREEN"; TOR_ICON="●"; else TOR_STAT="OFF"; TOR_COL="$RED"; TOR_ICON="○"; fi
-    if is_rotator_active; then ROT_STAT="ON"; ROT_COL="$MAUVE"; else ROT_STAT="OFF"; ROT_COL="$RED"; fi
+    if is_tor_active; then TOR_STAT="● ON"; else TOR_STAT="○ OFF"; fi
+    if is_rotator_active; then ROT_STAT="ON"; else ROT_STAT="OFF"; fi
 
-    PROMPT="Tor $TOR_ICON | Rotator [$ROT_STAT]"
+    PROMPT="Tor $TOR_STAT | Rotator [$ROT_STAT]"
     MAIN_OPTIONS="🛠 Setup & Config\n⚙️ Rotation Control\n🛡 Security & Logs\n🚀 Launch Browser\n🗑 Advanced / Uninstall\n🚪 Exit"
-    
-    CATEGORY=$(echo -e "$MAIN_OPTIONS" | rofi -dmenu -i -p "$PROMPT" -theme-str "$ROFI_THEME prompt { text-color: $TOR_COL; }")
+
+    CATEGORY=$(menu "$PROMPT" "$MAIN_OPTIONS")
 
     [[ -z "$CATEGORY" || "$CATEGORY" == *"Exit"* ]] && exit 0
     notify-send "Tor Manager" "Opening: $CATEGORY"
 
     case "$CATEGORY" in
         *"Setup & Config"*)
-            SUB=$(echo -e "🌐 Install Firefox Browser\n⚙️ Install Tor / Setup\n🦊 Configure Firefox Profile\n↩ Back" | rofi -dmenu -i -p "Setup" -theme-str "$ROFI_THEME")
+            SUB=$(echo -e "🌐 Install Firefox Browser\n⚙️ Install Tor / Setup\n🦊 Configure Firefox Profile\n↩ Back" | omarchy-launch-walker --dmenu -p "Setup" --width 500)
             [[ -z "$SUB" || "$SUB" == *"Back"* ]] && continue
             notify-send "Tor Manager" "Selected: $SUB"
 
@@ -80,7 +82,7 @@ while true; do
             ;;
 
         *"Rotation Control"*)
-            SUB=$(echo -e "▶️ Start Tor + Rotator\n⏹️ Stop Tor + Rotator\n🔄 Manual IP Rotate\n⏱️ Change Interval\n↩ Back" | rofi -dmenu -i -p "Control" -theme-str "$ROFI_THEME")
+            SUB=$(echo -e "▶️ Start Tor + Rotator\n⏹️ Stop Tor + Rotator\n🔄 Manual IP Rotate\n⏱️ Change Interval\n↩ Back" | omarchy-launch-walker --dmenu -p "Control" --width 500)
             [[ -z "$SUB" || "$SUB" == *"Back"* ]] && continue
             notify-send "Tor Manager" "Selected: $SUB"
 
@@ -89,7 +91,6 @@ while true; do
                 systemctl --user enable --now "$SERVICE_NAME"
                 notify-send "Tor Manager" "Routing Started."
             elif [[ "$SUB" == *"Stop"* ]]; then
-                # FIX: Explicitly stop the system routing and the user rotator[cite: 3]
                 systemctl --user stop "$SERVICE_NAME"
                 sudo systemctl stop tor.service
                 notify-send "Tor Manager" "Routing Stopped Completely."
@@ -102,7 +103,7 @@ while true; do
             ;;
 
         *"Security & Logs"*)
-            SUB=$(echo -e "🔍 Show Current IP\n🛡️ Verify Tor Connection\n💧 Multi-DNS Leak Check\n📜 View Logs\n↩ Back" | rofi -dmenu -i -p "Security" -theme-str "$ROFI_THEME")
+            SUB=$(echo -e "🔍 Show Current IP\n🛡️ Verify Tor Connection\n💧 Multi-DNS Leak Check\n📜 View Logs\n↩ Back" | omarchy-launch-walker --dmenu -p "Security" --width 500)
             [[ -z "$SUB" || "$SUB" == *"Back"* ]] && continue
             notify-send "Tor Manager" "Selected: $SUB"
 
