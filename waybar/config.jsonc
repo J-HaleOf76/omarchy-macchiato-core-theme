@@ -45,7 +45,13 @@
         "format": "{name}",
         "window-role": "libreoffice",
         "show-special": false,
-        "all-outputs": false
+        "all-outputs": false,
+        "persistent_workspaces": {
+            "1": [],
+            "2": [],
+            "3": [],
+            "4": []
+        }
     },
 
     "custom/window-info": {
