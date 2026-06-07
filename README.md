@@ -17,11 +17,11 @@
 </p>
 <p align="center">
   <img src="https://github.com/user-attachments/assets/3b426c85-6441-429b-aa31-f9cb4d8587c8" width="48%" />
-  <img src="https://github.com/user-attachments/assets/ba641a85-1219-4741-9ea4-b7bc1a3d123c" width="48%" />
+  <img src="https://github.com/user-attachments/assets/9fcc4fbe-78c6-43e7-9661-0a34a5a99cc6" width="48%" />
 </p>
 <p align="center">
   <img alt="Image" src="https://github.com/user-attachments/assets/c5ca0c5a-8ee9-446f-94f4-f18edd92ef0a" width="48%" />
-  <img src="https://github.com/user-attachments/assets/e0bcab31-f896-4fc7-afbd-818a18dd6752" width="48%" />
+  <img src="https://github.com/user-attachments/assets/07ae57bc-a7e2-4f5f-af8f-03601c9a6075" width="48%" />
 </p>
 
 </div>
