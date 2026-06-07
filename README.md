@@ -152,14 +152,8 @@ echo "✔ Waybar restarted."
 # 1. Install Playerctl (required for media key support)
 sudo pacman -S --needed playerctl
 
-# 2. Copy lock screen config files
-mv ~/.config/hypr/hyprlock.conf ~/.config/hypr/hyprlock.conf-Backup && \
-cp -r ~/.config/omarchy/current/theme/scripts \
-      ~/.config/omarchy/current/theme/hyprlock.conf \
-      ~/.config/hypr/
-
-# 3. Make scripts executable
-chmod +x ~/.config/hypr/scripts/*
+# 2. Make scripts executable
+chmod +x ~/config/omarchy/current/theme/scripts/*
 ```
 ---
 
@@ -189,19 +183,6 @@ chmod +x ~/.config/hypr/scripts/*
 > **3. Save and Exit**
 > - Press `Ctrl + O` on your keyboard, then press `Enter` to save.
 > - Press `Ctrl + X` to exit the editor.
-
----
-<br>
-
-### ⏪ Restore Previous Hyprlock (Remove Omarchy Macchiato Core)
-
-```bash
-# Remove the custom theme and restore your original backup
-rm ~/.config/hypr/hyprlock.conf && \
-mv ~/.config/hypr/hyprlock.conf-Backup ~/.config/hypr/hyprlock.conf
-```
-
-
 
 ---
 <div align="center">
