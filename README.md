@@ -153,7 +153,7 @@ echo "✔ Waybar restarted."
 sudo pacman -S --needed playerctl
 
 # 2. Make scripts executable
-chmod +x ~/config/omarchy/current/theme/scripts/*
+chmod +x ~/.config/omarchy/current/theme/scripts/*
 ```
 ---
 
